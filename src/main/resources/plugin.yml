@@ -1,0 +1,6 @@
+name: PrisonCore
+version: '${project.version}'
+main: dev.foggies.prisoncore.PrisonCore
+api-version: 1.19
+authors: [ foggies ]
+description: A Prison Core for TwisterMC
