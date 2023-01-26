@@ -3,27 +3,41 @@ package dev.foggies.prisoncore.player.manager;
 import dev.foggies.prisoncore.PrisonCore;
 import dev.foggies.prisoncore.player.data.TPlayer;
 import dev.foggies.prisoncore.player.database.PlayerDatabase;
+import dev.foggies.prisoncore.utils.SmallCaps;
+import lombok.Getter;
 import me.lucko.helper.Schedulers;
 import me.lucko.helper.utils.Players;
+import org.bukkit.entity.Player;
 
+import java.text.NumberFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PlayerManager {
 
     private final PrisonCore plugin;
     private final PlayerDatabase playerDatabase;
     private final Map<UUID, TPlayer> players = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<UUID, Long> topBlocks = new ConcurrentHashMap<>();
 
     public PlayerManager(PrisonCore plugin) {
         this.plugin = plugin;
         this.playerDatabase = new PlayerDatabase();
 
         loadAllOnline();
+
+        for (int i = 0; i < 10; i++) {
+            loadPlayer(UUID.randomUUID());
+        }
+
         beginSavePlayerTask();
+        refreshTopBlocks();
+
     }
 
     public void loadAllOnline() {
@@ -78,6 +92,36 @@ public class PlayerManager {
 
     public boolean contains(UUID uuid) {
         return this.players.containsKey(uuid);
+    }
+
+    public void printTopBlocks(Player player) {
+        AtomicInteger i = new AtomicInteger(1);
+
+        Players.msg(player, "&7&m                   &r &6&l" + SmallCaps.convert("Blocks top") + " &7&m                   ");
+
+        this.topBlocks.entrySet().stream().sorted(Map.Entry.<UUID, Long>comparingByValue().reversed()).forEach(entry -> {
+            Optional<Player> p = Players.get(entry.getKey());
+
+            String name = SmallCaps.convert(p.map(Player::getName).orElse("Test Player #" + i.get()));
+            long blocks = entry.getValue();
+            String formatted = NumberFormat.getInstance().format(blocks);
+
+            Players.msg(player, "&6" + i.get() + ". &e" + name + " &f- &l" + SmallCaps.convert(formatted));
+            i.getAndIncrement();
+        });
+    }
+
+
+    public void refreshTopBlocks() {
+        Schedulers.builder()
+                .async()
+                .every(1, TimeUnit.MINUTES)
+                .run(() -> {
+                    this.topBlocks.clear();
+                    Map<UUID, Long> map = this.playerDatabase.getBlockTop(10);
+                    System.out.println(map.size());
+                    this.topBlocks.putAll(map);
+                });
     }
 
     public void beginSavePlayerTask() {

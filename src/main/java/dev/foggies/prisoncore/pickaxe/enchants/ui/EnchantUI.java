@@ -4,7 +4,10 @@ import dev.foggies.prisoncore.api.ClickRunnableMap;
 import dev.foggies.prisoncore.pickaxe.data.Pickaxe;
 import dev.foggies.prisoncore.pickaxe.enchants.data.PickaxeEnchants;
 import dev.foggies.prisoncore.pickaxe.enchants.api.AbstractEnchant;
+import dev.foggies.prisoncore.player.currency.CurrencyHolder;
+import dev.foggies.prisoncore.player.currency.CurrencyType;
 import dev.foggies.prisoncore.player.data.TPlayer;
+import dev.foggies.prisoncore.utils.Hex;
 import me.lucko.helper.item.ItemStackBuilder;
 import me.lucko.helper.menu.Gui;
 import me.lucko.helper.menu.scheme.MenuPopulator;
@@ -13,6 +16,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +27,7 @@ public class EnchantUI extends Gui {
     private TPlayer tPlayer;
 
     public EnchantUI(Player player, Pickaxe pickaxe, TPlayer tPlayer) {
-        super(player, 6, "&2Enchantments");
+        super(player, 6, "&f\uf000\uE009");
         this.pickaxe = pickaxe;
         this.tPlayer = tPlayer;
     }
@@ -54,6 +58,8 @@ public class EnchantUI extends Gui {
         });
 
         PickaxeEnchants pickaxeEnchants = pickaxe.getPickaxeEnchants();
+        CurrencyHolder currencyHolder = tPlayer.getPlayerInfo().getCurrencyHolder();
+        NumberFormat nf = NumberFormat.getInstance();
 
         pickaxeEnchants
                 .getEnchants()
@@ -61,15 +67,24 @@ public class EnchantUI extends Gui {
                 .forEach(enchant -> {
 
                     AbstractEnchant aEnchant = enchant.getEnchant();
-                    long affordableLevels = enchant.getMaximumLevelPlayerCanAfford(tPlayer);
+                    long affordableLevels = enchant.getLevelPlayerCanAfford(tPlayer);
+                    long orbs = currencyHolder.getCurrency(CurrencyType.ORBS);
 
                     List<String> lore = new ArrayList<>(aEnchant.getDescription());
                     lore.add("");
-                    lore.add("&7Current Level: &a" + enchant.getLevel());
-                    lore.add("&7Upgrade x1 (Left): &a" + enchant.calculateValue(1));
-                    lore.add("&7Upgrade x10 (Right): &a" + enchant.calculateValue(10));
-                    lore.add("&7Upgrade x100 (Middle): &a" + enchant.calculateValue(100));
-                    lore.add("&7Upgrade Max: (Q) &a" + enchant.calculateValue(affordableLevels));
+                    lore.add("#417D4DPickaxe Information");
+                    lore.add("");
+                    lore.add("#73F18ECurrent Level &7❘ &f" + nf.format(enchant.getLevel()));
+                    lore.add("#73F18EMaximum Level &7❘ &f" + nf.format(aEnchant.getMaxLevel()));
+                    lore.add("");
+                    lore.add("#417D4DPrice Information");
+                    lore.add("");
+                    lore.add("#417D4D[!] #73F18EYour Orbs: #2BFF577" + nf.format(orbs));
+                    lore.add("");
+                    lore.add("#417D4D[+1] #73F18ELeft Click &7❘ #2BFF57" + nf.format(enchant.calculateValue(1)));
+                    lore.add("#417D4D[+10] #73F18ERight Click &7❘ #2BFF57" + nf.format(enchant.calculateValue(10)));
+                    lore.add("#417D4D[+100] #73F18EMiddle Click &7❘ #2BFF57" + nf.format(enchant.calculateValue(100)));
+                    lore.add("#417D4D[Max] #73F18EDrop Click &7❘ #2BFF57" + nf.format(enchant.calculateValue(affordableLevels)));
 
                     Map<ClickType, Runnable> clickTypeRunnableMap = new ClickRunnableMap()
                             .add(ClickType.LEFT, () -> {
@@ -84,7 +99,7 @@ public class EnchantUI extends Gui {
                                 enchant.upgradeEnchant(tPlayer, 100);
                                 redraw();
                             }).add(ClickType.DROP, () -> {
-                                enchant.upgradeEnchant(tPlayer, affordableLevels);
+                                enchant.upgradeMax(tPlayer);
                                 redraw();
                             }).build();
 
@@ -92,8 +107,8 @@ public class EnchantUI extends Gui {
                     enchantPopulator
                             .accept(
                                     ItemStackBuilder.of(Material.ENCHANTED_BOOK)
-                                            .name(aEnchant.getDisplayName())
-                                            .lore(lore)
+                                            .name(Hex.translate("#417D4D&l" + aEnchant.getDisplayName() + " Enchantment"))
+                                            .lore(Hex.translate(lore))
                                             .hideAttributes()
                                             .buildFromMap(clickTypeRunnableMap)
                             );

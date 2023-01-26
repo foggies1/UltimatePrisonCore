@@ -3,6 +3,7 @@ package dev.foggies.prisoncore.pickaxe.enchants.data;
 import dev.foggies.prisoncore.pickaxe.data.Pickaxe;
 import dev.foggies.prisoncore.pickaxe.enchants.api.AbstractEnchant;
 import dev.foggies.prisoncore.pickaxe.enchants.storage.EnchantStorage;
+import dev.foggies.prisoncore.utils.SmallCaps;
 import lombok.Getter;
 
 import java.util.List;
@@ -51,7 +52,7 @@ public class PickaxeEnchants {
                     if (enchant.getLevel() <= 0) {
                         return "";
                     }
-                    return abstractEnchant.getColor() + abstractEnchant.getDisplayName() + " " + enchant.getLevel();
+                    return abstractEnchant.getColor() + "• " + SmallCaps.convert(abstractEnchant.getDisplayName() + " " + enchant.getLevel());
                 })
                 .collect(Collectors.toList());
     }

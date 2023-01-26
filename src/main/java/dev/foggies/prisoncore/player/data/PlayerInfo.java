@@ -7,10 +7,14 @@ import lombok.Getter;
 import lombok.Setter;
 import me.lucko.helper.utils.Players;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.NumberFormat;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Getter
 @Setter
+
 public class PlayerInfo {
 
     private static final int MAX_LEVEL = 1000;
@@ -25,19 +29,18 @@ public class PlayerInfo {
         this.player = player;
         this.currencyHolder = new CurrencyHolder(player);
         this.level = 1L;
-        this.blocksBroken = 0L;
+        this.blocksBroken = ThreadLocalRandom.current().nextInt(1000000000);
         this.joinDate = System.currentTimeMillis();
         this.lastLogin = System.currentTimeMillis();
     }
 
-    public PlayerInfo(TPlayer player, String serialisedData) {
-        this.player = player;
-        String[] data = serialisedData.split(",");
-        this.currencyHolder = new CurrencyHolder(player, data[0]);
-        this.level = Long.parseLong(data[1]);
-        this.blocksBroken = Long.parseLong(data[2]);
-        this.joinDate = Long.parseLong(data[3]);
-        this.lastLogin = Long.parseLong(data[4]);
+    public PlayerInfo(TPlayer tPlayer, ResultSet rs) throws SQLException {
+        this.player = tPlayer;
+        this.currencyHolder = new CurrencyHolder(tPlayer, rs);
+        this.level = rs.getLong("level");
+        this.blocksBroken = rs.getLong("blocks");
+        this.joinDate = rs.getLong("joined");
+        this.lastLogin = rs.getLong("last_login");
     }
 
     public void levelUpMax(Mine mine) {
@@ -111,10 +114,6 @@ public class PlayerInfo {
 
     public long getLevelUpCost() {
         return (long) (Math.pow(level, 2) * 100);
-    }
-
-    public String serialise() {
-        return String.format("%s,%s,%s,%s,%s", currencyHolder.serialise(), level, blocksBroken, joinDate, lastLogin);
     }
 
 

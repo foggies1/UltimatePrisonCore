@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.Setter;
 import me.lucko.helper.utils.Players;
 
+import java.text.NumberFormat;
+
 @Getter
 @Setter
 public class PickaxeEnchant {
@@ -23,46 +25,59 @@ public class PickaxeEnchant {
         this.level = level;
     }
 
-    public void upgradeEnchantMax(TPlayer tPlayer) {
-        long upgradableLevels = getMaximumLevelPlayerCanAfford(tPlayer);
-        if (upgradableLevels > 0) {
-            upgradeEnchant(tPlayer, upgradableLevels);
-        } else {
-            long cost = calculateValue(1);
-            long orbs = tPlayer.getPlayerInfo().getCurrencyHolder().getCurrency(CurrencyType.ORBS);
-            Players.msg(tPlayer.toBukkit(), "&2&lENCHANT &8» &7You need &c" + (cost - orbs) + " &7more Orbs to upgrade this enchant.");
-        }
+    public void upgradeMax(TPlayer tPlayer) {
+        long levels = getLevelPlayerCanAfford(tPlayer);
+        upgradeEnchant(tPlayer, levels);
     }
 
     public void upgradeEnchant(TPlayer tPlayer, long levels) {
+
+        NumberFormat nf = NumberFormat.getInstance();
+        if (this.level == this.enchant.getMaxLevel()) {
+            Players.msg(tPlayer.toBukkit(), "&2&lENCHANT &8» &cYou cannot upgrade this enchant past level " + this.enchant.getMaxLevel() + "!");
+            return;
+        }
+
+        if (this.level + levels > this.enchant.getMaxLevel()) {
+            levels = this.enchant.getMaxLevel() - this.level;
+        }
 
         CurrencyHolder currencyHolder = tPlayer.getPlayerInfo().getCurrencyHolder();
         long orbs = currencyHolder.getCurrency(CurrencyType.ORBS);
         long cost = calculateValue(levels);
 
         if (orbs < cost) {
-            Players.msg(tPlayer.toBukkit(), "&2&lENCHANT &8» &7You need &c" + (cost - orbs) + " &7more Orbs to upgrade this enchant!");
+            Players.msg(tPlayer.toBukkit(), "&2&lENCHANT &8» &7You need &c" + nf.format(cost - orbs) + " &7more orbs to upgrade this enchant!");
             return;
         }
 
         currencyHolder.removeCurrency(CurrencyType.ORBS, cost);
-        addLevel(level);
+        addLevel(levels);
+        Players.msg(tPlayer.toBukkit(), "&2&lENCHANT &8» &7You have upgraded your " + this.enchant.getDisplayName() + " &7enchant to level " + this.level + "&7!");
+        Players.msg(tPlayer.toBukkit(), "&2&lENCHANT &8» &7You have spent &c" + nf.format(cost) + " &7Orbs to upgrade this enchant!");
 
     }
 
-    public long getMaximumLevelPlayerCanAfford(TPlayer tPlayer) {
+    public long getLevelPlayerCanAfford(TPlayer tPlayer) {
         long orbs = tPlayer.getPlayerInfo().getCurrencyHolder().getCurrency(CurrencyType.ORBS);
-        long maxLevel = 0;
         long cost = 0;
-        while (cost < orbs) {
-            maxLevel++;
-            cost = calculateValue(maxLevel);
+        long levels = 0;
+        while (this.level + levels < this.enchant.getMaxLevel() || orbs <= cost) {
+            levels++;
+            cost += calculateValue(levels);
         }
-        return maxLevel;
+        return levels;
     }
 
     public long calculateValue(long levels) {
-        return (long) (this.enchant.getCost() * Math.pow(this.enchant.getCostMultiplier(), this.level + levels));
+        long baseCost = this.enchant.getCost();
+        double costMultiplier = this.enchant.getCostMultiplier();
+        long level = this.level;
+
+        long firstTerm = baseCost * level;
+        long commonDiff = baseCost;
+        long n = levels;
+        return (firstTerm * n + commonDiff * n * (n - 1) / 2) * (long)costMultiplier;
     }
 
     public void addLevel(long level) {

@@ -24,7 +24,7 @@ public abstract class AbstractEnchant {
     private final long startLevel;
     private final long maxLevel;
     private final long cost;
-    private final long costMultiplier;
+    private final float costMultiplier;
 
     private final float chance;
 

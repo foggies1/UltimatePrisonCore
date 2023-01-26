@@ -3,8 +3,10 @@ package dev.foggies.prisoncore.mine.data;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.function.mask.RegionMask;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
+import com.sk89q.worldedit.world.block.BlockType;
 import dev.foggies.prisoncore.api.PrisonRegion;
 import lombok.Getter;
 import me.lucko.helper.Schedulers;
@@ -15,6 +17,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Getter
@@ -26,6 +29,55 @@ public class MineRegion extends PrisonRegion {
 
     public MineRegion(Mine mine, Position pos1, Position pos2) {
         super(mine, pos1, pos2);
+    }
+
+    public long setRegions(List<Region> regions, BlockType blockType) {
+
+        AtomicLong blocksChanged = new AtomicLong(0);
+
+        Schedulers.async().run(() -> {
+
+            RegionMask regionMask = new RegionMask(toCuboidRegion());
+
+            try (
+                    EditSession editSession = WorldEdit.getInstance().newEditSession(toFaweWorld());
+            ) {
+
+                editSession.setMask(regionMask);
+                regions.forEach(region -> {
+                    blocksChanged.addAndGet(editSession.setBlocks(region, blockType));
+                });
+                editSession.flushQueue();
+
+            } catch (MaxChangedBlocksException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return blocksChanged.get();
+    }
+
+    public long setRegion(Region region, BlockType blockType) {
+        AtomicLong blocksChanged = new AtomicLong(0);
+
+        Schedulers.async().run(() -> {
+
+            RegionMask regionMask = new RegionMask(toCuboidRegion());
+
+            try (
+                    EditSession editSession = WorldEdit.getInstance().newEditSession(toFaweWorld());
+            ) {
+
+                editSession.setMask(regionMask);
+                blocksChanged.set(editSession.setBlocks(region, blockType));
+                editSession.flushQueue();
+
+            } catch (MaxChangedBlocksException e) {
+                e.printStackTrace();
+            }
+        });
+
+        return blocksChanged.get();
     }
 
     @Override

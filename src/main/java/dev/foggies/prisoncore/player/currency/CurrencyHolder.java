@@ -2,6 +2,8 @@ package dev.foggies.prisoncore.player.currency;
 
 import dev.foggies.prisoncore.player.data.TPlayer;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,15 +21,16 @@ public class CurrencyHolder {
                 });
     }
 
-    public CurrencyHolder(TPlayer player, String serialisedData) {
-        this.player = player;
-        String[] data = serialisedData.split(";");
-        Arrays.stream(data)
+    public CurrencyHolder(TPlayer tPlayer, ResultSet rs){
+        this.player = tPlayer;
+        Arrays.stream(CurrencyType.values())
                 .forEach(type -> {
-                    String[] typeData = type.split(":");
-                    currencies.put(CurrencyType.valueOf(typeData[0]), Long.parseLong(typeData[1]));
+                    try {
+                        currencies.put(type, rs.getLong(type.name().toLowerCase()));
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
                 });
-        checkAndInsert();
     }
 
     public long getCurrency(CurrencyType currencyType) {
@@ -68,14 +71,6 @@ public class CurrencyHolder {
                         currencies.put(type, 0L);
                     }
                 });
-    }
-
-    public String serialise() {
-        StringBuilder builder = new StringBuilder();
-        for (Map.Entry<CurrencyType, Long> entry : currencies.entrySet()) {
-            builder.append(entry.getKey().name()).append(":").append(entry.getValue()).append(";");
-        }
-        return builder.toString();
     }
 
 
