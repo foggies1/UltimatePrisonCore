@@ -15,7 +15,7 @@ public abstract class Database<T> {
 
     public Database() {
         HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl("jdbc:mysql://u29708_mUYL7oAdBu:WpSI3eLFUvwtmgfxiXGHHCoc@rosalie.bloom.host:3306/s29708_prison");
+        hikariConfig.setJdbcUrl("********************************");
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
